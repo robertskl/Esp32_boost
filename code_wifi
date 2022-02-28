@@ -1,0 +1,298 @@
+// Used libraries
+
+#include <DNSServer.h>
+#include <WebServer.h>
+#include <WiFi.h>
+
+// AP credentials & wifi connection TimeOut variable
+
+const char* ssid = "Web_server";
+const char* password = "123456789";
+const unsigned long connection_failed = 120000;  // TimeOut 2 min.
+
+// Server and DNSserver initialization
+
+WebServer server(80);
+DNSServer dnsserver;
+
+// Main PAGE html code
+
+const char PAGE[] PROGMEM = R"==(
+<!DOCTYPE html>
+<html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <title>Superboost</title>
+    <style>
+        .input{
+            font-size: 15px;
+            padding: 12px 20px;
+            margin: 10px 0; 
+            width: 50%;
+            background-color: rgb(250, 235, 215);
+            border: none;
+            border-bottom: 2px solid #000
+            
+        }
+
+        .info{
+            text-align: center; 
+            width: 500px; 
+            height: 500px; 
+            margin-top: 200px; 
+            padding: 10px 0; 
+            border-left: 5px solid #000; 
+            border-right: 5px solid #000; 
+            border-bottom: 5px solid #000; 
+            border-top: 5px solid #000; 
+            border-radius: 25px; 
+            background-color: rgb(250, 235, 215);
+        }
+
+        .leg{
+            font-size: 40px; 
+            padding-bottom: 40px; 
+            padding-top: 30px;
+        }
+
+        .but{
+            padding: 10px; 
+            background-color: rgb(250, 235, 215); 
+            font-size: 15px; 
+            border-left: 3px solid #000;  
+            border-right: 3px solid #000;  
+            border-bottom: 3px solid #000; 
+            border-top: 3px solid #000; 
+            border-radius: 5px; 
+            width: 25%; 
+            margin-top: 10px;
+        }
+
+    </style>
+</head>
+    <body style="background-color:rgb(17, 102, 102); max-width: 500px; margin: auto;">
+        <form class="info" method="GET" action="/get">
+            <legend class="leg">Information</legend>
+            <div>
+                
+                <input class="input" type="text" placeholder="Name" name="name" id="name" required>
+            </div>
+            <div>
+                <input class="input" type="text" placeholder="surname" name="surname" required>
+            </div>
+            <div>
+           
+                <input class="input" type="text" placeholder="ssid" name="ssid" required>
+            </div>
+            <div>
+
+                <input class="input" type="password" placeholder="password" name="password">
+            </div>
+                <button class="but" type="submit">Submit</button>
+        </form>        
+    </body>
+</html>
+)==";
+
+// PAGE for approving licensing process
+
+const char APRROVED[] PROGMEM = R"==(
+<!DOCTYPE html>
+<html lang="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <title>Superboost</title>
+    <style>
+        .header{
+            font-size: 40px;
+            text-align: center;
+            padding-top: 300px;
+        }
+        .txt{
+            font-size: 40px;
+        }
+    </style>
+</head>
+<body style="background-color:rgb(17, 102, 102); max-width: 500px; margin: auto;">
+    <h2 class = "header">License found!</h2>
+    <div style="text-align: center;">
+        <p class="txt">If necessary contact our support! </p>
+    </div>
+    <div style="text-align: center;">
+        <p class="txt">tel:27039241</p>
+    </div>
+</body>
+</html>
+)==";
+
+// PAGE for retrying wifi connection (I need to add a description to for the user how to input data)
+
+const char RETRY_WIFI[] PROGMEM = R"==(
+<!DOCTYPE html>
+<html lang="en">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<head>
+    <title>Superboost</title>
+    <style>
+        .header{
+            font-size: 40px;
+            text-align: center;
+            padding-top: 20px;
+        }
+        .but{
+            padding: 10px; 
+            background-color: rgb(250, 235, 215); 
+            font-size: 15px; 
+            border-left: 3px solid #000;  
+            border-right: 3px solid #000;  
+            border-bottom: 3px solid #000; 
+            border-top: 3px solid #000; 
+            border-radius: 5px; 
+            width: 25%; 
+            margin-top: 10px;
+        }
+        .info{
+            text-align: center; 
+            width: 500px; 
+            height: 350px; 
+            margin-top: 100px; 
+            padding: 10px 0; 
+            border-left: 5px solid #000; 
+            border-right: 5px solid #000; 
+            border-bottom: 5px solid #000; 
+            border-top: 5px solid #000; 
+            border-radius: 25px; 
+            background-color: rgb(250, 235, 215);
+        }
+
+        .leg{
+            font-size: 40px; 
+            padding-bottom: 40px; 
+            padding-top: 30px;
+        }
+        .input{
+            font-size: 15px;
+            padding: 12px 20px;
+            margin: 10px 0; 
+            width: 50%;
+            background-color: rgb(250, 235, 215);
+            border: none;
+            border-bottom: 2px solid #000
+            
+        }
+        .but{
+            padding: 10px; 
+            background-color: rgb(250, 235, 215); 
+            font-size: 15px; 
+            border-left: 3px solid #000;  
+            border-right: 3px solid #000;  
+            border-bottom: 3px solid #000; 
+            border-top: 3px solid #000; 
+            border-radius: 5px; 
+            width: 25%; 
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body style="background-color:rgb(17, 102, 102); max-width: 500px; margin: auto;">
+    <h2 class = "header">Wifi connection error!</h2>
+    <H3 class = "header">Please try again.</H3>
+    <form method="GET" action="/get_wifi" class="info">
+        <legend class="leg">Information</legend>
+        <div>
+            
+            <input class="input" type="text" placeholder="ssid" name="ssid" id="ssid" required>
+        </div>
+        <div>
+            <input class="input" type="password" placeholder="password" name="password" id="password">
+        </div>
+        <button class="but" type="submit">Submit</button>
+    </form> 
+</body>
+</html>
+)==";
+
+// Function for retrying wifi connection
+
+void Retry_wifi() {
+    String SSID_2 = server.arg("ssid");
+    String Password_2 = server.arg("password");
+    Connect_wifi(SSID_2, Password_2);
+}
+
+// Displaying page when opening the IP if captive portal fails
+
+void handle_root() {
+    server.send(200, "text/html", PAGE);
+}
+
+// Function for connecting to wifi (delete all serial.println())
+
+void Connect_wifi(String SSid, String PAssword) {
+    unsigned long Start_time = millis();                                                          // connection start time
+    Serial.println("Connecting wifi");
+    if (PAssword == "")
+    {
+        Serial.println("without");
+        WiFi.begin(SSid.c_str());                                                                 // connection without password
+    }
+    else {
+        Serial.println("with");
+        WiFi.begin(SSid.c_str(), PAssword.c_str());                                               // connection with password
+    }
+    while (WiFi.status() != WL_CONNECTED)                                                         // while wifi not connected
+    {
+        unsigned long Connection_time = millis();                                                 // Curent connection time
+
+        if (Connection_time - Start_time > connection_failed)                                     // If TimeOut error variable exceeded
+        {
+            Serial.println("Timeout");
+            server.send(200, "text/html", RETRY_WIFI);                                            // Send wifi request again
+            break;
+        }
+        delay(500);
+    }
+    if (WiFi.status() == WL_CONNECTED)                                                            // If wifi connected to provided SSID & Password
+    {
+        Serial.println("connected");
+        server.send(200, "text/html", APRROVED);                                                  // Show approval (before this check info with server) 
+    }
+}
+
+// Function that gets executed when user preses submit
+
+void request() {
+    String Name = server.arg("name");                             // Retreiving get/ argument by name
+    String Surname = server.arg("surname");                       // Retreiving get/ argument by name
+    String SSID = server.arg("ssid");                             // Retreiving get/ argument by name
+    String Password = server.arg("password");                     // Retreiving get/ argument by name
+    Serial.println(Name);                       // Delete later
+    Serial.println(Surname);                    // Delete later
+    Serial.println(SSID);                       // Delete later
+    Serial.println(Password);                   // Delete later
+    Connect_wifi(SSID, Password); 
+}
+
+void setup()
+{
+    Serial.begin(115200);                             // serial communication initialization
+    WiFi.mode(WIFI_MODE_APSTA);                       // Wifi mode decleration to simultaneous AP & STA mode
+    WiFi.softAP(ssid, password);                      // Initializing ESP32 AP
+    IPAddress IP = WiFi.softAPIP();                   // Finding the IP adress of AP 198.168.4.1 (delete later)
+    Serial.print("AP IP address: ");                  // Print the IP (delete later)
+    Serial.println(IP);                               // Print the IP (delete later)
+    dnsserver.start(53, "*", IP);                     // Start DNS server on port 53 and reroute all requests to AP IP adress (captive portal)
+    server.onNotFound(handle_root);                   // If no server found display page (captive portal)
+    server.on("/", HTTP_GET, handle_root);            // If user opens AP page manually display page
+    server.on("/get", HTTP_GET, request);             // If user presses submit button
+    server.on("/get_wifi", HTTP_GET, Retry_wifi);     // If user tries to connect to wifi a second time
+    server.begin();                                   // Begin the server
+
+}
+
+void loop()
+{
+    server.handleClient();            // Hnadle all requests
+    dnsserver.processNextRequest();   // DNS server handle all requests
+
+}
